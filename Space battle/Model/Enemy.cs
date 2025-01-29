@@ -16,34 +16,10 @@ namespace Space_battle.Model
     internal class Enemy : UserGameObject
     {
         private readonly double hitBoxSize = 30;
-        private double PointX
-        {
-            get
-            {
-                return 800 - X - Form.Width + 15;
-            }
-        }
-        private double PointY
-        {
-            get
-            {
-                return 600 - Y - Form.Height + 15;
-            }
-        }
-        public new Rect HitBox
-        {
-            get
-            {
-                return new Rect(PointX, PointY, hitBoxSize, hitBoxSize);
-            }
-        }
-        public string StringHP
-        {
-            get
-            {
-                return "Enemy HP : " + HP;
-            }
-        }
+        private double PointX => 800 - X - Form.Width + 15; 
+        private double PointY =>  600 - Y - Form.Height + 15; 
+        public new Rect HitBox =>  new Rect(PointX, PointY, hitBoxSize, hitBoxSize); 
+        public string StringHP => "Enemy HP : " + HP; 
         private double StartAngle { get; } = 18;
 
         public Enemy(double x, double y, double angle, double HP)
@@ -69,7 +45,7 @@ namespace Space_battle.Model
             {
                 Width = 60,
                 Height = 60,
-                Fill = new ImageBrush(new BitmapImage(new Uri(@"C:\Users\Max\Desktop\Проги\Space battle\Space battle\Images\vehicle2U.png", UriKind.Relative)))
+                Fill = new ImageBrush(new BitmapImage(new Uri(@"..\..\Images\vehicle2U.png", UriKind.Relative)))
             };
         }
 

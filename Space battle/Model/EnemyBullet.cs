@@ -13,27 +13,9 @@ namespace Space_battle.Model
 {
     internal class EnemyBullet : GameObject
     {
-        private double PointX
-        {
-            get
-            {
-                return 800 - X - Form.Width;
-            }
-        }
-        private double PointY
-        {
-            get
-            {
-                return 600 - Y - Form.Height;
-            }
-        }
-        public new Rect HitBox
-        {
-            get
-            {
-                return new Rect(PointX, PointY, Form.Width, Form.Height);
-            }
-        }
+        private double PointX => 800 - X - Form.Width; 
+        private double PointY => 600 - Y - Form.Height; 
+        public new Rect HitBox => new Rect(PointX, PointY, Form.Width, Form.Height);
         public EnemyBullet(Enemy enemy)
         {
             SetForm();

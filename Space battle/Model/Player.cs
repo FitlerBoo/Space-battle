@@ -52,7 +52,7 @@ namespace Space_battle.Model
             {
                 Width = 60,
                 Height = 60,
-                Fill = new ImageBrush(new BitmapImage(new Uri(@"C:\Users\Max\Desktop\Проги\Space battle\Space battle\Images\vehicleU.png", UriKind.Relative)))
+                Fill = new ImageBrush(new BitmapImage(new Uri(@"..\..\Images\vehicleU.png", UriKind.Relative)))
             };
         }
 

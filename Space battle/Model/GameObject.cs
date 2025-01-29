@@ -13,13 +13,7 @@ namespace Space_battle.Model
     abstract class GameObject
     {
         public Rectangle Form { get; set; }
-        public Rect HitBox
-        {
-            get
-            {
-                return new Rect(X, Y, Form.Width, Form.Height);
-            }
-        }
+        public Rect HitBox => new Rect(X, Y, Form.Width, Form.Height); 
         public double Speed { get; set; }
         public double Angle { get; set; }
         public readonly int AngleValue  = 10;

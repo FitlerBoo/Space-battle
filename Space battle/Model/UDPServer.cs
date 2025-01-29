@@ -62,7 +62,6 @@ namespace Space_battle.Model
                 try
                 {
                     sender.Connect(IPAddress.Broadcast, remotePort);
-                    throw new NullReferenceException();
                 }
                 catch (Exception e)
                 {
