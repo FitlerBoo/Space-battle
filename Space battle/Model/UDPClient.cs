@@ -86,7 +86,14 @@ namespace Space_battle.Model
             Receive();
         }
         #endregion
+
+
         #region Processing Data
+        /// <summary>
+        /// TODO: Вынести всё связанное с сериализацией/десериализацией в отдельный класс
+        /// Здесь должна остаться только логика приёма/передачи данных, поддержка соединения
+        /// </summary>
+        /// <param name="data"></param>
         public void ProcessData(byte[] data)
         {
             bullets.Clear();

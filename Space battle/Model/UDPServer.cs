@@ -102,6 +102,10 @@ namespace Space_battle.Model
         }
         #endregion
         #region Data Preparation
+
+        /// <summary>
+        /// TODO: Вынести всё связанное с сереализацие/десериализацией в отдельный класс
+        /// Здесть должна остаться только логика приёма/перадачи данных, поддержка соединения
         private byte[] PrepareData()
         {
             List<byte> result = new List<byte>();

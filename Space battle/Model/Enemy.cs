@@ -25,6 +25,8 @@ namespace Space_battle.Model
         public Enemy(double x, double y, double angle, double HP)
         {
             SetForm();
+
+            // TODO: Вынести в конструктор базового класса
             X = x;
             Y = y;
             Angle = angle + StartAngle;
@@ -35,6 +37,8 @@ namespace Space_battle.Model
         public Enemy()
         {
             SetForm();
+
+            // TODO: Вынести в конструктор базового класса
             angleStartPosition = 90;
             Angle = StartAngle;
         }

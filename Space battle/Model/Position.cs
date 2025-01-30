@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,7 +12,6 @@ namespace Space_battle.Model
         private const double PLAYER_START_X = 370;
         private const double PLAYER_START_Y = 500;
         private const int ANGLE_STEP = 10;
-        private const int ENEMY_ANGLE_DIFFERENCE = 18;
 
         private double _movementRange;
         private readonly double _angleStartPosition;
@@ -19,12 +19,13 @@ namespace Space_battle.Model
         public double Y { get; private set; }
         public double Angle { get; private set; }
 
-        public Position(double x, double y, double angle, bool isEnemy)
+        public Position(double x, double y, double angle, bool isEnemy, [Optional] int movementSpeed)
         {
             X = x;
             Y = y;
             _angleStartPosition = isEnemy ? 90 : -90;
             Angle = angle;
+            _movementRange = movementSpeed;
         }
 
         public void CalculateNextPosition()

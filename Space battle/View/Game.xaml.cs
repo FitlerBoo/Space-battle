@@ -194,10 +194,11 @@ namespace Space_battle.View
 
         private void MoveEnemy()
         {
+            /// TODO: вместо 1,2,3 сделать enum {Create = 1, RotateLeft = 2, RotateRight = 3}
             var inBorder = CheckBorderCondition(enemy);
             if (inBorder)
             {
-                if (udpServer.Command[0])
+                if (udpServer.Command[(int)Commands.MoveForward])
                 {
                     changeSpeedEnemy = true;
                     enemy.Move();
@@ -207,9 +208,9 @@ namespace Space_battle.View
                 else changeSpeedEnemy = false;
             }
             else enemy.Reset();
-            if (udpServer.Command[1]) CreateEnemyBullet();
-            if (udpServer.Command[2]) enemy.RotateForm(true);
-            if (udpServer.Command[3]) enemy.RotateForm(false);
+            if (udpServer.Command[(int)Commands.Fire]) CreateEnemyBullet();
+            if (udpServer.Command[(int)Commands.RotateLeft]) enemy.RotateForm(true);
+            if (udpServer.Command[(int)Commands.RotateRight]) enemy.RotateForm(false);
         }
         private void MovePlayer()
         {
@@ -252,6 +253,11 @@ namespace Space_battle.View
             }
         }
 
+
+        /// TODO: Вот так делать не стоит, если хочется отделить кусок кода,
+        /// то скорее всего ему тут не место, и нужно выделить его в отдельны класс.
+        /// На крайняк есть region <summary> 
+        
         //*************************************************************** Clietn part ******************************************************************************
         private void GameLoopClient()
         {
@@ -412,5 +418,12 @@ namespace Space_battle.View
             else if (e.Key == Key.Space && isClient) fire = true;
         }
         #endregion
+        public enum Commands
+        {
+            MoveForward,
+            Fire,
+            RotateLeft,
+            RotateRight
+        }
     }
 }

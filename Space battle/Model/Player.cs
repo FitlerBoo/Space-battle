@@ -33,12 +33,16 @@ namespace Space_battle.Model
         public Player()
         {
             SetForm();
+
+            // TODO: Вынести в конструктор базового класса
             angleStartPosition = -90;
         }
 
         public Player(double x, double y, double angle, double HP)
         {
             SetForm();
+
+            // TODO: Вынести в конструктор базового класса
             X = x;
             Y = y;
             Angle = angle + 18;

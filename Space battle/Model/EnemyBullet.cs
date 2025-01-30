@@ -19,6 +19,8 @@ namespace Space_battle.Model
         public EnemyBullet(Enemy enemy)
         {
             SetForm();
+
+            // TODO: Вынести в конструктор базового класса
             angleStartPosition = 90;
             Speed = 40;
             Angle = enemy.Angle;
@@ -30,6 +32,8 @@ namespace Space_battle.Model
         public EnemyBullet(double x, double y, double angle)
         {
             SetForm();
+
+            // TODO: Вынести в конструктор базового класса
             Angle = angle;
             X = x;
             Y = y;
