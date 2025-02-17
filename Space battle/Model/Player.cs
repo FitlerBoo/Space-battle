@@ -15,20 +15,8 @@ namespace Space_battle.Model
 {
     internal class Player : UserGameObject
     {
-        public new Rect HitBox
-        {
-            get
-            {
-                return new Rect((X + 15), (Y + 15), 30, 30);
-            }
-        }
-        public string StringHP
-        {
-            get
-            {
-                return "Player HP : " + HP;
-            }
-        }
+        public new Rect HitBox => new Rect((X + 15), (Y + 15), 30, 30); 
+        public string StringHP => "Player HP : " + HP; 
 
         public Player()
         {

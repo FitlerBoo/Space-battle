@@ -9,7 +9,6 @@ namespace Space_battle.Model
 {
     abstract class UserGameObject : GameObject
     {
-
         public int Acceleration { get; set; }
         public double PlayerStartX { get; } = 370;
         public double PlayerStartY { get; } = 500;

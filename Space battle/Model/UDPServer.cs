@@ -88,7 +88,7 @@ namespace Space_battle.Model
                     {
                         var receivedData = receiver.Receive(ref remoteEndPoint);
 
-                        ProcessData(receivedData);
+                        GetCommand(receivedData);
                     }
                 });
             }
@@ -119,14 +119,14 @@ namespace Space_battle.Model
             return result.ToArray();
         }
 
-        private List<byte> PrepareGameObjectData(GameObject gobj, bool isPlayer, bool isRocket)
+        private List<byte> PrepareGameObjectData(GameObject gObj, bool isPlayer, bool isRocket)
         {
             List<byte> data = new List<byte>();
             data.Add(isPlayer ? playerIndicator : enemyIndicator);
             data.Add(isRocket ? rocketIndicator : bulletIndicator);
-            SerializeAndAddProperty(gobj.X, ref data);
-            SerializeAndAddProperty(gobj.Y, ref data);
-            SerializeAndAddProperty(gobj.Angle, ref data);
+            SerializeAndAddProperty(gObj.X, ref data);
+            SerializeAndAddProperty(gObj.Y, ref data);
+            SerializeAndAddProperty(gObj.Angle, ref data);
 
             return data;
         }
@@ -162,7 +162,7 @@ namespace Space_battle.Model
         /// bytes : 0. moveForward, 1. fire, 2. rotateLeft,  3. rotateRight
         /// </summary>
         /// <param name="data"></param>
-        private void ProcessData(byte[] data)
+        private void GetCommand(byte[] data)
         {
             Command = new bool[data.Length];
             for (int i = 0; i < data.Length; i++)

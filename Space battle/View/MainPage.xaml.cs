@@ -42,5 +42,10 @@ namespace Space_battle.View
             NavigationService.Navigate(game);
             game.StartGame();
         }
+
+        private void StartOfflineGame(object sender, RoutedEventArgs e)
+        {
+            NavigationService.Navigate(new OfflineGame());
+        }
     }
 }

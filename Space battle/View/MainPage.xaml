@@ -5,7 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:Menu="clr-namespace:Space_battle.Utilities"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="600" d:DesignWidth="800"
       Title="MainPage">
 
     <Grid>
@@ -14,7 +14,7 @@
                 <ImageBrush ImageSource="/Images/space background.png"
                             Stretch="UniformToFill"/>
             </Border.Background>
-            <StackPanel Width="300" Height="115">
+            <StackPanel Width="300" Margin="250,248,250,181">
                 <Menu:Btn Style="{StaticResource BtnStyle}" Click="CreateTheGame">
                     <Grid>
                         <TextBlock Style="{StaticResource Text_Style}" Text="CREATE THE GAME" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -25,8 +25,13 @@
                         <TextBlock Style="{StaticResource Text_Style}" Text="JOIN THE GAME" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
                 </Menu:Btn>
+                <Menu:Btn Style="{StaticResource BtnStyle}" Click="StartOfflineGame">
+                    <Grid>
+                        <TextBlock Style="{StaticResource Text_Style}" Text="START OFFLINE GAME" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Menu:Btn>
             </StackPanel>
         </Border>
-        <TextBlock Style="{StaticResource Text_Style}" Text="SPACE BATTLE" VerticalAlignment="Top" Margin="0,90,0,0" Foreground="DarkRed" FontSize="40" HorizontalAlignment="Center"/>
+        <TextBlock Style="{StaticResource Text_Style}" Text="SPACE BATTLE" VerticalAlignment="Top" Foreground="DarkRed" FontSize="40" HorizontalAlignment="Center" Margin="0,170,0,0"/>
     </Grid>
 </Page>

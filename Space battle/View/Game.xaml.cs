@@ -42,7 +42,6 @@ namespace Space_battle.View
         private List<Rectangle> itemRemover = new List<Rectangle>();
         private List<Bullet> bullets = new List<Bullet>();
         private List<EnemyBullet> eBullets = new List<EnemyBullet>();
-        private bool fl = false;
 
         private Task gameTask;
         #endregion
@@ -258,7 +257,7 @@ namespace Space_battle.View
         /// то скорее всего ему тут не место, и нужно выделить его в отдельны класс.
         /// На крайняк есть region <summary> 
         
-        //*************************************************************** Clietn part ******************************************************************************
+        //*************************************************************** Client part ******************************************************************************
         private void GameLoopClient()
         {
             udpClient.Command = MakeCommand();
