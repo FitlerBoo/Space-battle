@@ -23,10 +23,8 @@ namespace Space_battle.Model
         private readonly byte rocketIndicator = 0b1;
         private readonly byte bulletIndicator = 0b0;
         #endregion
-        private Player player;
-        private Enemy enemy;
-        private List<Bullet> bullets;
-        private List<EnemyBullet> eBullets;
+        private Player player1;
+        private Player player2;
         /// <summary>
         /// bytes : 0 - moveForward; 1 - fire; 2 - rotateLeft; 3 - rotateRight
         /// </summary>
@@ -39,12 +37,10 @@ namespace Space_battle.Model
         StreamWriter sw;
 
 
-        public UDPServer(Player player, Enemy enemy, List<Bullet> bullets, List<EnemyBullet> eBullets)
+        public UDPServer(Player player1, Player player2)
         {
-            this.player = player;
-            this.enemy = enemy;
-            this.bullets = bullets;
-            this.eBullets = eBullets;
+            this.player1 = player1;
+            this.player2 = player2;
             Initialize();
         }
 
@@ -109,10 +105,10 @@ namespace Space_battle.Model
         private byte[] PrepareData()
         {
             List<byte> result = new List<byte>();
-            result.AddRange(PrepareGameObjectData(player, isPlayer: true, isRocket: true));
-            result.AddRange(AddHpData(player.HP));
-            result.AddRange(PrepareGameObjectData(enemy, isPlayer: false, isRocket: true));
-            result.AddRange(AddHpData(enemy.HP));
+            result.AddRange(PrepareGameObjectData(player1, isPlayer: true, isRocket: true));
+            result.AddRange(AddHpData(player1.HP));
+            result.AddRange(PrepareGameObjectData(player2, isPlayer: false, isRocket: true));
+            result.AddRange(AddHpData(player2.HP));
             result.AddRange(PrepareBulletsData(bullets, isPlayer: true));
             result.AddRange(PrepareBulletsData(eBullets, isPlayer: false));
 

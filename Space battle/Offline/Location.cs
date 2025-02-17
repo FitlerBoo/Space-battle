@@ -34,7 +34,7 @@ namespace Space_battle.Offline
         /// <summary>
         /// Конструктор для создания Projectile
         /// </summary>
-        public Location(double x, double y, bool isSecondPlayer, double angle)
+        public Location(double x, double y, double angle)
         {
             X = x;
             Y = y;

@@ -150,14 +150,9 @@
       <DependentUpon>202502012053227_init.cs</DependentUpon>
     </Compile>
     <Compile Include="Model\Bullet.cs" />
-    <Compile Include="Model\Enemy.cs" />
-    <Compile Include="Model\EnemyBullet.cs" />
     <Compile Include="Model\GameObject.cs" />
-    <Compile Include="Model\ISerializer.cs" />
-    <Compile Include="Model\MyJsonSerializer.cs" />
     <Compile Include="Model\Player.cs" />
     <Compile Include="Model\Position.cs" />
-    <Compile Include="Model\UserGameObject.cs" />
     <Compile Include="Model\UDPClient.cs" />
     <Compile Include="Model\UDPServer.cs" />
     <Compile Include="Offline\Data\ApplicationContext.cs" />

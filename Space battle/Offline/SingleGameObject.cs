@@ -14,16 +14,17 @@ namespace Space_battle.Offline
     {
         protected Location _location;
         protected Rectangle _form;
-        protected bool _isEnemy;
+        protected bool _isSecondPlayer;
         public Rect HitBox => new Rect(_location.X, _location.Y, _form.Width, _form.Height);
         public SingleGameObject(bool isSecondPlayer)
         {
-            _isEnemy = isSecondPlayer;
+            _isSecondPlayer = isSecondPlayer;
             _location = new Location(isSecondPlayer);
         }
         public SingleGameObject(double x, double y, bool isSecondPlayer, double angle)
         {
-            _location = new Location(x, y, isSecondPlayer, angle);
+            _isSecondPlayer= isSecondPlayer;
+            _location = new Location(x, y, angle);
         }
 
         // TODO: Как правильно назвать этот метод и реализовать перемещение 
