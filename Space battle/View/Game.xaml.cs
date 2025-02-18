@@ -35,8 +35,8 @@ namespace Space_battle.View
         private bool isClient;
         private bool increaseP1Speed;
         private bool increaseP2Speed;
-        Position Player1DefaultPos = new Position(370, 500, -9, 0);
-        Position Player2DefaultPos = new Position(370, 40, 9, 0);
+        Position Player1DefaultPos = new Position(370, 500, -9);
+        Position Player2DefaultPos = new Position(370, 40, 9);
         #endregion
 
         #region Render Objects
@@ -52,7 +52,8 @@ namespace Space_battle.View
         private const byte FALSE_COMMAND = 0b0;
         private bool rotateRight;
         private bool rotateLeft;
-        private bool moveForward;
+        private bool moveForwardP1;
+        private bool moveForwardP2;
         private bool fire;
         #endregion
 
@@ -94,8 +95,7 @@ namespace Space_battle.View
         private void RenderStartScene(bool isClient)
         {
             Canvas.SetRight(Player2HP, 0);
-            AddPlayer(isClient);
-            AddEnemy(isClient);
+            AddPlayers();
         }
 
         public void StartGame()
@@ -164,11 +164,22 @@ namespace Space_battle.View
         {
             if (CheckBorderCondition(player2))
             {
-                if (udpServer.Command[(int)Commands.MoveForward]) increaseP2Speed = true;
-                else increaseP2Speed = false;
+                if (udpServer.Command[(int)Commands.MoveForward])
+                {
+                    moveForwardP2 = true;
+                    increaseP2Speed = true;
+                }
+                else
+                {
+                    moveForwardP2 = false;
+                    increaseP2Speed = false;
+                }
 
-                player2.CalculateSpeed(increaseP2Speed);
-                player2.Move();
+                if (moveForwardP2 || player2.Speed > 0)
+                {
+                    player2.CalculateSpeed(increaseP2Speed);
+                    player2.Move();
+                }
             }
             else player2.MoveToPosition(Player2DefaultPos);
             if (udpServer.Command[(int)Commands.Fire]) MyCanvas.Children.Add(player2.MakeBullet().Form);
@@ -179,15 +190,21 @@ namespace Space_battle.View
         {
             if (CheckBorderCondition(player1))
             {
-                player1.CalculateSpeed(increaseP1Speed);
-                player1.Move();
+                if (moveForwardP1 || player1.Speed > 0)
+                {
+                    player1.CalculateSpeed(increaseP1Speed);
+                    player1.Move();
+                }
             }
-            else player1.MoveToPosition(Player1DefaultPos);
+            else
+            {
+                player1.MoveToPosition(Player1DefaultPos);
+            }
         }
 
         private void MoveBullets(Queue<Bullet> bullets)
         {
-            foreach (var bullet in bullets)
+            foreach (var bullet in bullets.ToArray())
             {
                 if (MyCanvas.Children.Contains(bullet.Form))
                 {
@@ -210,7 +227,7 @@ namespace Space_battle.View
 
         private byte[] MakeCommand()
         {
-            var commands = new bool[] { moveForward, fire, rotateLeft, rotateRight };
+            var commands = new bool[] { moveForwardP1, fire, rotateLeft, rotateRight };
             var resultCommand = new byte[4];
             for (int i = 0; i < commands.Length; i++)
                 resultCommand[i] = commands[i] ? TRUE_COMMAND : FALSE_COMMAND;
@@ -219,36 +236,25 @@ namespace Space_battle.View
          
         private void RenderScene(Player player1, Player player2)
         {
-            foreach (var obj in itemRemover)
-                MyCanvas.Children.Remove(obj);
-            itemRemover.Clear();
+            if (player1 == null || player2 == null) return;
+            ClearObsoleteObjects();
 
             UpdateScore(player1, player2);
             AddObject(player1);
             AddObject(player2);
 
-            if(player1.Bullets.Count > 0)
-                foreach (var bullet in player1.Bullets) AddObject(bullet);
-            if (player2.Bullets.Count > 0)
-                foreach (var bullet in player2.Bullets) AddObject(bullet);
+            AddBullets(player1.Bullets);
+            AddBullets(player2.Bullets);
         }
         #endregion
 
         #region Common
-
-        private void AddObject(GameObject gObj)
-        {
-            if (gObj == null) return;
-
-            gObj.MakeVisualMovement();
-            MyCanvas.Children.Add(gObj.Form);
-            this.itemRemover.Enqueue(gObj.Form);
-        }
         private bool CheckBorderCondition(GameObject obj)
         {
             return obj.Y > -40 && (obj.Y - 30) < applicationHeight &&
                 (obj.X + 30) < applicationWidth && obj.X > -40;
         }
+
         private void UpdateScore(Player player1, Player player2)
         {
             if (player1 == null || player2 == null) return;
@@ -257,22 +263,37 @@ namespace Space_battle.View
         }
         #endregion
 
-        #region Game objects creation
-
-        private void AddPlayer(bool isClient)
+        #region Game objects creation and removal
+        private void AddObject(GameObject gObj)
         {
-            player1 = new Player(true,Player1DefaultPos);
-            //if (isClient) return;
-            MyCanvas.Children.Add(player1.Form);
-            Canvas.SetZIndex(player1.Form, 1);
+            if (gObj == null) return;
+
+            gObj.MakeVisualMovement();
+            MyCanvas.Children.Add(gObj.Form);
+            this.itemRemover.Enqueue(gObj.Form);
         }
 
-        private void AddEnemy(bool isClient)
+        private void AddPlayers()
         {
-            player2 = new Player(false,Player2DefaultPos);
-            if (isClient) return;
+            player1 = new Player(true,Player1DefaultPos);
+            player2 = new Player(false, Player2DefaultPos);
+            MyCanvas.Children.Add(player1.Form);
             MyCanvas.Children.Add(player2.Form);
+            Canvas.SetZIndex(player1.Form, 1);
             Canvas.SetZIndex(player2.Form, 1);
+        }
+
+        private void ClearObsoleteObjects()
+        {
+            foreach (var obj in itemRemover)
+                MyCanvas.Children.Remove(obj);
+            itemRemover.Clear();
+        }
+
+        private void AddBullets(Queue<Bullet> bullets)
+        {
+            if (bullets.Count > 0)
+                foreach (var bullet in bullets) AddObject(bullet);
         }
         #endregion
 
@@ -282,12 +303,11 @@ namespace Space_battle.View
         {
             if (e.Key == Key.W)
             {
-                moveForward = false;
+                moveForwardP1 = false;
                 increaseP1Speed = false;
             }
             if (e.Key == Key.A) rotateLeft = false;
-            if (e.Key == Key.D)
-                rotateRight = false;
+            if (e.Key == Key.D) rotateRight = false;
             if (e.Key == Key.Space) fire = false;
             #region moveBack
             //if (e.Key == Key.D)
@@ -301,7 +321,7 @@ namespace Space_battle.View
         {
             if (e.Key == Key.W)
             {
-                moveForward = true;
+                moveForwardP1 = true;
                 increaseP1Speed = true;
                 //moveBack = false;
             }

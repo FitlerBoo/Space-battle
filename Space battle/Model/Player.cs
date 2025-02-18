@@ -16,18 +16,16 @@ namespace Space_battle.Model
         public string MessageHealth => string.Format("{0} {1}", _isFirstPlayerStyle ? "Player 1: " : "Player 2: ", _health);
         public double Health => _health;
         public Queue<Bullet> Bullets => _bullets;
-
-        protected bool _isFirstPlayerStyle;
+        public bool Style => _isFirstPlayerStyle;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="stile">true = red style / false = yellow style</param>
         /// <param name="pos"></param>
         /// <param name="health"></param>
-        public Player(bool stile, Position pos, double health = 100)
-            :base(pos)
+        public Player(bool style, Position pos, double health = 100)
+            :base(pos, style)
         {
-            _isFirstPlayerStyle = stile;
             _health = health;
         }
 
@@ -44,7 +42,7 @@ namespace Space_battle.Model
 
         public Bullet MakeBullet()
         {
-            Bullet bullet = new Bullet(_isFirstPlayerStyle, _position.X + _form.Width / 2.0, _position.Y + _form.Height / 2.0, _position.MovementAngle);
+            Bullet bullet = new Bullet(_isFirstPlayerStyle, _position.X + Form.Width / 2, _position.Y + Form.Height / 2, _position.MovementAngle);
             _bullets.Enqueue(bullet);
             return bullet;
         }
@@ -63,6 +61,29 @@ namespace Space_battle.Model
         public void CalculateSpeed(bool increase)
         {
             _position.CalculatePlayerMovementSpeed(increase);
+        }
+
+        public override byte[] Serialize()
+        {
+            List<byte> data = new List<byte>();
+            data.Add(_isFirstPlayerStyle ? (byte)0 : (byte)1);
+            SerializeAndAddProperty(X, ref data);
+            SerializeAndAddProperty(Y, ref data);
+            SerializeAndAddProperty(Angle, ref data);
+            SerializeAndAddProperty(Health, ref data);
+            foreach (Bullet bullet in _bullets)
+                data.AddRange(bullet.Serialize());
+            return data.ToArray();
+        }
+
+        public override void Deserialize(byte[] data, ref int currentIndex)
+        {
+            var currentIndicator = data[currentIndex++];
+            var x = DeserializeProperty(data, ref currentIndex);
+            var y = DeserializeProperty(data, ref currentIndex);
+            var angle = DeserializeProperty(data, ref currentIndex);
+            _health = DeserializeProperty(data, ref currentIndex);
+            MoveToPosition(new Position(x, y, angle));
         }
     }
 }

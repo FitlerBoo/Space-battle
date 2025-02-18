@@ -103,52 +103,9 @@ namespace Space_battle.Model
         private byte[] PrepareData()
         {
             List<byte> result = new List<byte>();
-            result.AddRange(PrepareGameObjectData(player1, isPlayer: true, isRocket: true));
-            result.AddRange(AddHpData(player1.Health));
-            result.AddRange(PrepareGameObjectData(player2, isPlayer: false, isRocket: true));
-            result.AddRange(AddHpData(player2.Health));
-            result.AddRange(PrepareBulletsData(player1.Bullets, isPlayer: true));
-            result.AddRange(PrepareBulletsData(player2.Bullets, isPlayer: false));
-
+            result.AddRange(player1.Serialize());
+            result.AddRange(player2.Serialize());
             return result.ToArray();
-        }
-
-        private List<byte> PrepareGameObjectData(GameObject gObj, bool isPlayer, bool isRocket)
-        {
-            List<byte> data = new List<byte>();
-            data.Add(isPlayer ? playerIndicator : enemyIndicator);
-            data.Add(isRocket ? rocketIndicator : bulletIndicator);
-            SerializeAndAddProperty(gObj.X, ref data);
-            SerializeAndAddProperty(gObj.Y, ref data);
-            SerializeAndAddProperty(gObj.Angle, ref data);
-
-            return data;
-        }
-
-        private void SerializeAndAddProperty(double value, ref List<byte> data)
-        {
-            var valueByte = BitConverter.GetBytes(value);
-            data.Add((byte)valueByte.Length);
-            data.AddRange(valueByte);
-        }
-
-        private List<byte> PrepareBulletsData(IEnumerable<GameObject> gobj, bool isPlayer)
-        {
-            List<byte> result = new List<byte>();
-            foreach (var item in gobj.ToArray())
-            {
-                result.AddRange(PrepareGameObjectData(item, isPlayer, false));
-            }
-            return result;
-        }
-
-        private byte[] AddHpData(double HP)
-        {
-            var list = new List<byte>();
-            var data = BitConverter.GetBytes(HP);
-            list.Add((byte)data.Length);
-            list.AddRange(data);
-            return list.ToArray();
         }
         #endregion
         #region Data Processing

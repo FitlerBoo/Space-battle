@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace Space_battle.Model
@@ -65,7 +66,8 @@ namespace Space_battle.Model
             {
                 Task.Run(async () =>
                 {
-                    sender.Connect(new IPEndPoint(IPAddress.Parse("192.168.43.139"), remotePort));
+                    //(IPAddress.Parse("192.168.43.139")
+                    sender.Connect(IPAddress.Broadcast, remotePort);
                     while (true)
                     {
                         var i = await sender.SendAsync(Command, Command.Length);
@@ -90,74 +92,24 @@ namespace Space_battle.Model
         /// Здесь должна остаться только логика приёма/передачи данных, поддержка соединения
         /// </summary>
         /// <param name="data"></param>
-        public void ProcessData(byte[] data)
+        private void ProcessData(byte[] data)
         {
-            bullets.Clear();
-            eBullets.Clear();
-            bool isEnemy, isRocket,
-                inProcess = true;
             int currentIndex = 0;
+            DeserializePlayer(player1, data, ref currentIndex);
+            DeserializePlayer(player2, data, ref currentIndex);
+        }
 
-            while (inProcess)
+        private void DeserializePlayer(Player player, byte[] data, ref int currentIndex)
+        {
+            var indicator = data[currentIndex];
+            player.Bullets.Clear();
+            player.Deserialize(data, ref currentIndex);
+            while (data[currentIndex] == indicator)
             {
-                isEnemy = data[currentIndex++] > 0;
-                isRocket = data[currentIndex++] > 0;
-                inProcess = ProcessGameObject(data, ref currentIndex, isEnemy, isRocket);
+                var bullet = new Bullet(player.Style, 0, 0, 0);
+                bullet.Deserialize(data, ref currentIndex);
+                player1.Bullets.Enqueue(bullet);
             }
-            playersCounter = 0;
-        }
-
-        private bool ProcessGameObject(byte[] data, ref int currentIndex, bool isEnemy, bool isRocket)
-        {
-            var x = DeserializeProperty(data, ref currentIndex);
-            var y = DeserializeProperty(data, ref currentIndex);
-            var angle = DeserializeProperty(data, ref currentIndex);
-            double HP = -1;
-            if (playersCounter < 2)
-            {
-                HP = DeserializeProperty(data, ref currentIndex);
-                playersCounter++;
-            }
-            if (HP != -1)
-                DistributeProperties(isEnemy, isRocket, x, y, angle, HP);
-            else
-                DistributeProperties(isEnemy, isRocket, x, y, angle);
-            return currentIndex != data.Length;
-        }
-
-        private double DeserializeProperty(byte[] data, ref int currentIndex)
-        {
-            var length = data[currentIndex++];
-            byte[] byteData = new byte[length];
-            for (int i = 0; i < length; i++)
-                byteData[i] = data[currentIndex++];
-            var deserValue = BitConverter.ToDouble(byteData,0);
-            return deserValue;
-        }
-
-        private void DistributeProperties(bool isEnemy, bool isRocket, double x, double y, double angle, [Optional] double HP)
-        {
-            if (isEnemy)
-                
-                DistributeEnemyProperties(isRocket, x, y, angle, HP);
-            else
-                DisrtibutePlayerProperties(isRocket, x, y, angle, HP);
-        }
-        
-        private void DistributeEnemyProperties(bool isRocket, double x, double y, double angle, [Optional] double HP)
-        {
-            if (isRocket)
-                player2 = new Enemy(x,y,angle,HP);
-            else
-                eBullets.Add(new EnemyBullet(x, y, angle));
-        }
-
-        private void DisrtibutePlayerProperties(bool isRocket, double x, double y, double angle, [Optional] double HP)
-        {
-            if (isRocket)
-                player1 = new Player(x,y,angle,HP);
-            else
-                bullets.Add(new Bullet(x, y, angle));
         }
         #endregion
     }

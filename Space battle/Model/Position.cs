@@ -12,11 +12,12 @@ namespace Space_battle.Model
         public double X { get; private set; }
         public double Y { get; private set; }
         public double MovementAngle { get; private set; }
+        public double Speed => _movementRange;
 
         /// <summary>
         /// Конструктор для создания Bullet
         /// </summary>
-        public Position(double x, double y, double angle, double movementRange)
+        public Position(double x, double y, double angle, double movementRange = 0)
         {
             X = x;
             Y = y;
@@ -32,9 +33,8 @@ namespace Space_battle.Model
 
         public void CalculatePlayerMovementSpeed(bool increaseSpeed)
         {
-            _movementRange = (increaseSpeed ? 1 : -1) * 0.2;
-            if (_movementRange <= 9.8 && _movementRange >= 0)
-                return;
+            if (_movementRange <= 10 && _movementRange >= 0)
+                _movementRange += increaseSpeed ? 1 : -1 * 0.2;
             else if (_movementRange > 10)
                 _movementRange = 10;
             else _movementRange = 0;
