@@ -1,33 +1,27 @@
 ﻿using System.Windows;
 using System.Windows.Shapes;
 using System.Windows.Media;
+using System.Windows.Controls;
 
 namespace Space_battle.Model
 {
     abstract class GameObject
     {
-        protected bool _isFirstPlayer;
         protected Position _position;
         protected Rectangle _form;
+        public double X => _position.X;
+        public double Y => _position.Y;
         public Rect HitBox => new Rect(_position.X, _position.Y, _form.Width, _form.Height);
-        public Rectangle GetForm() => _form;
+        public Rectangle Form => _form;
 
-        public GameObject(bool isFirstPlayer)
+        public GameObject(Position pos)
         {
-            _isFirstPlayer = isFirstPlayer;
-            _position = new Position(isFirstPlayer);
-            SetForm();
-            Transform();
-        }
-        public GameObject(bool isFirstPlayer, double x, double y, double angle)
-        {
-            _isFirstPlayer = isFirstPlayer;
-            _position = new Position(x, y, angle);
+            MoveToPosition(pos);
             SetForm();
             Transform();
         }
 
-        public void Transform()
+        private void Transform()
         {
             _form.RenderTransform = new RotateTransform(-_position.GetAngleStep() * (_position.MovementAngle % 36),
                     _form.Width / 2,
@@ -43,8 +37,20 @@ namespace Space_battle.Model
         public void Move()
         {
             _position.Move();
+            MakeVisualMovement();
         }
 
+        public void MoveToPosition(Position pos)
+        {
+            _position = pos;
+            MakeVisualMovement();
+        }
+
+        public void MakeVisualMovement()
+        {
+            Canvas.SetLeft(_form, _position.X);
+            Canvas.SetTop(_form, _position.Y);
+        }
         protected abstract void SetForm();
     }
 }

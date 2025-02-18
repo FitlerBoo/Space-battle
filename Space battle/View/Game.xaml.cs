@@ -32,31 +32,33 @@ namespace Space_battle.View
         #region Application Properties
         private readonly double applicationHeight = Application.Current.MainWindow.Height;
         private readonly double applicationWidth = Application.Current.MainWindow.Width;
-
+        private bool isClient;
+        private bool increaseP1Speed;
+        private bool increaseP2Speed;
+        Position Player1DefaultPos = new Position(370, 500, -9, 0);
+        Position Player2DefaultPos = new Position(370, 40, 9, 0);
         #endregion
+
         #region Render Objects
         private Player player1;
         private Player player2;
         private DispatcherTimer gameTimer = new DispatcherTimer();
-
-        private List<Rectangle> itemRemover = new List<Rectangle>();
-
+        private Queue<UIElement> itemRemover = new Queue<UIElement>();
         private Task gameTask;
         #endregion
+
         #region Commands
-        private const byte trueCommand = 0b1;
-        private const byte falseCommand = 0b0;
+        private const byte TRUE_COMMAND = 0b1;
+        private const byte FALSE_COMMAND = 0b0;
         private bool rotateRight;
         private bool rotateLeft;
         private bool moveForward;
         private bool fire;
         #endregion
+
         #region Net
         private UDPServer udpServer;
         private UDPClient udpClient;
-        private bool isClient;
-        private bool changeSpeedPlayer;
-        private bool changeSpeedEnemy;
         #endregion
 
         /// <summary>
@@ -81,8 +83,6 @@ namespace Space_battle.View
                 udpServer = new UDPServer(player1, player2);
                 udpServer.StartDataExchange();
             }
-                
-            
 
             gameTask = new Task(RenderTask); 
             
@@ -106,7 +106,7 @@ namespace Space_battle.View
         private void RenderTask()
         {
             var renderTimer = Stopwatch.StartNew();
-            while (player1.GetHealth() > 0 && player2.GetHealth() > 0)
+            while (player1.Health > 0 && player2.Health > 0)
             {
 
                 if (renderTimer.ElapsedMilliseconds < 15)
@@ -127,63 +127,34 @@ namespace Space_battle.View
                     this.Dispatcher.BeginInvokeShutdown(DispatcherPriority.Normal);
                 }
             }
-            var winner = player1.GetHealth() > player2.GetHealth() ? "Player 1" : "Player 2";
+            var winner = player1.Health > player2.Health ? "Player 1" : "Player 2";
             MessageBox.Show(winner + " wins!");
             this.Dispatcher.BeginInvokeShutdown(DispatcherPriority.Normal);
         }
 
-        //*************************************************************** Server part ******************************************************************************
+        #region Server part
         private void GameLoopServer()
         {
-            player1.CalculateSpeed(changeSpeedPlayer);
-            player2.CalculateSpeed(changeSpeedEnemy);
-
             MovePlayer();
             MoveEnemy();
 
-            MoveBullets(bullets, isEnemy : false);
-            MoveBullets(eBullets, isEnemy : true);
+            MoveBullets(player1.Bullets);
+            MoveBullets(player2.Bullets);
 
             // TODO : Подумать как сделать неуязвимость на промежуток времени и анимацию.
-            var playerImmune = CheckBulletsIntersectionsPlayer(player1, eBullets);
-            var enemyImmune = CheckBulletsIntersectionsEnemy(player2, bullets);
-
-            ClearBullets();
+            var playerImmune = CheckBulletsIntersectionsPlayer(player1, player2.Bullets);
+            var enemyImmune = CheckBulletsIntersectionsPlayer(player2, player1.Bullets);
         }
 
-        private void ClearBullets()
-        {
-            foreach (var bullet in itemRemover)
-                MyCanvas.Children.Remove(bullet);
-
-            if (itemRemover.Count > 0)
-                itemRemover.Clear();
-        }
-
-        private bool CheckBulletsIntersectionsPlayer(Player playerObj, List<EnemyBullet> bullets)
+        private bool CheckBulletsIntersectionsPlayer(Player playerObj, Queue<Bullet> bullets)
         {
             foreach (var bullet in bullets.ToArray())
                 if (playerObj.HitBox.IntersectsWith(bullet.HitBox))
                 {
-                    MyCanvas.Children.Remove(bullet.Form);
-                    itemRemover.Add(bullet.Form);
-                    bullets.Remove(bullet);
-                    playerObj.HP -= 10;
-                    PlayerHP.Text = playerObj.StringHP;
-                    return true;
-                }
-            return false;
-        }
-
-        private bool CheckBulletsIntersectionsEnemy(Enemy playerObj, List<Bullet> bullets)
-        {
-            foreach (var bullet in bullets.ToArray())
-                if (playerObj.HitBox.IntersectsWith(bullet.HitBox))
-                {
-                    MyCanvas.Children.Remove(bullet._form);
-                    bullets.Remove(bullet);
-                    playerObj.HP -= 10;
-                    Player2HP.Text = playerObj.StringHP;
+                    var b = bullets.Dequeue();
+                    MyCanvas.Children.Remove(b.Form);
+                    playerObj.TakeDamage();
+                    UpdateScore(player1, player2);
                     return true;
                 }
             return false;
@@ -191,79 +162,50 @@ namespace Space_battle.View
 
         private void MoveEnemy()
         {
-            /// TODO: вместо 1,2,3 сделать enum {Create = 1, RotateLeft = 2, RotateRight = 3}
-            var inBorder = CheckBorderCondition(player2);
-            if (inBorder)
+            if (CheckBorderCondition(player2))
             {
-                if (udpServer.Command[(int)Commands.MoveForward])
-                {
-                    changeSpeedEnemy = true;
-                    player2.Move();
-                    Canvas.SetBottom(player2.Form, player2.Y);
-                    Canvas.SetRight(player2.Form, player2.X);
-                }
-                else changeSpeedEnemy = false;
+                if (udpServer.Command[(int)Commands.MoveForward]) increaseP2Speed = true;
+                else increaseP2Speed = false;
+
+                player2.CalculateSpeed(increaseP2Speed);
+                player2.Move();
             }
-            else player2.Reset();
-            if (udpServer.Command[(int)Commands.Fire]) CreateEnemyBullet();
-            if (udpServer.Command[(int)Commands.RotateLeft]) player2.RotateForm(true);
-            if (udpServer.Command[(int)Commands.RotateRight]) player2.RotateForm(false);
+            else player2.MoveToPosition(Player2DefaultPos);
+            if (udpServer.Command[(int)Commands.Fire]) MyCanvas.Children.Add(player2.MakeBullet().Form);
+            if (udpServer.Command[(int)Commands.RotateLeft]) player2.RotateObject(true);
+            if (udpServer.Command[(int)Commands.RotateRight]) player2.RotateObject(false);
         }
         private void MovePlayer()
         {
-            var inBorder = CheckBorderCondition(player1);
-            if (inBorder)
+            if (CheckBorderCondition(player1))
             {
-                if (moveForward || player1.Speed > 0)
-                {
-                    player1.Move();
-                    Canvas.SetTop(player1._form, player1.Y);
-                    Canvas.SetLeft(player1._form, player1.X);
-                }
+                player1.CalculateSpeed(increaseP1Speed);
+                player1.Move();
             }
-            else player1.Reset();
+            else player1.MoveToPosition(Player1DefaultPos);
         }
 
-        private void MoveBullets(IEnumerable<GameObject> bullets, bool isEnemy)
+        private void MoveBullets(Queue<Bullet> bullets)
         {
             foreach (var bullet in bullets)
             {
-                if (MyCanvas.Children.Contains(bullet._form))
+                if (MyCanvas.Children.Contains(bullet.Form))
                 {
-                    var inBorder = CheckBorderCondition(bullet);
-                    if (!inBorder)  itemRemover.Add(bullet._form);
+                    if (CheckBorderCondition(bullet))
+                        bullet.Move(); 
                     else
-                    {
-                        bullet.Move();
-                        if (isEnemy)
-                        {
-                            Canvas.SetBottom(bullet._form, bullet.Y);
-                            Canvas.SetRight(bullet._form, bullet.X);
-                        }
-                        else
-                        {
-                            Canvas.SetTop(bullet._form, bullet.Y);
-                            Canvas.SetLeft(bullet._form, bullet.X);
-                        }
-                    }
+                        MyCanvas.Children.Remove(bullets.Dequeue().Form);
                 }
             }
         }
+        #endregion
 
-
-        /// TODO: Вот так делать не стоит, если хочется отделить кусок кода,
-        /// то скорее всего ему тут не место, и нужно выделить его в отдельны класс.
-        /// На крайняк есть region <summary> 
-        
-        //*************************************************************** Client part ******************************************************************************
+        #region  Client part
         private void GameLoopClient()
         {
             udpClient.Command = MakeCommand();
             var objects = udpClient.GetRenderedObjects();
-            RenderScene(player : objects.Item1,
-                enemy : objects.Item2,
-                bullets : objects.Item3,
-                eBullets : objects.Item4);
+            RenderScene(player1 : objects.Item1, player2 : objects.Item2);
         }
 
         private byte[] MakeCommand()
@@ -271,99 +213,66 @@ namespace Space_battle.View
             var commands = new bool[] { moveForward, fire, rotateLeft, rotateRight };
             var resultCommand = new byte[4];
             for (int i = 0; i < commands.Length; i++)
-                resultCommand[i] = commands[i] ? trueCommand : falseCommand;
+                resultCommand[i] = commands[i] ? TRUE_COMMAND : FALSE_COMMAND;
             return resultCommand;
         }
          
-        private void RenderScene(Player player, Enemy enemy, List<Bullet> bullets, List<EnemyBullet> eBullets)
+        private void RenderScene(Player player1, Player player2)
         {
             foreach (var obj in itemRemover)
                 MyCanvas.Children.Remove(obj);
             itemRemover.Clear();
 
-            UpdateScore(player, enemy);
-            AddObject(player, false);
-            AddObject(enemy, true);
+            UpdateScore(player1, player2);
+            AddObject(player1);
+            AddObject(player2);
 
-            if(bullets != null)
-                foreach (var bullet in bullets) AddObject(bullet, false);
-            if (eBullets != null)
-                foreach (var eBullet in eBullets) AddObject(eBullet, true);
+            if(player1.Bullets.Count > 0)
+                foreach (var bullet in player1.Bullets) AddObject(bullet);
+            if (player2.Bullets.Count > 0)
+                foreach (var bullet in player2.Bullets) AddObject(bullet);
         }
+        #endregion
 
-        //****************************************************************** Common ******************************************************************************
+        #region Common
 
-        private void AddObject(GameObject gObj, bool isEnemy)
+        private void AddObject(GameObject gObj)
         {
             if (gObj == null) return;
-            if (isEnemy)
-            {
-                Canvas.SetRight(gObj._form, gObj.X);
-                Canvas.SetBottom(gObj._form, gObj.Y);
-            }
-            else
-            {
-                Canvas.SetLeft(gObj._form, gObj.X);
-                Canvas.SetTop(gObj._form, gObj.Y);
-            }
-            MyCanvas.Children.Add(gObj._form);
-            this.itemRemover.Add(gObj._form);
+
+            gObj.MakeVisualMovement();
+            MyCanvas.Children.Add(gObj.Form);
+            this.itemRemover.Enqueue(gObj.Form);
         }
         private bool CheckBorderCondition(GameObject obj)
         {
             return obj.Y > -40 && (obj.Y - 30) < applicationHeight &&
                 (obj.X + 30) < applicationWidth && obj.X > -40;
         }
-        private void UpdateScore(Player player, Enemy enemy)
+        private void UpdateScore(Player player1, Player player2)
         {
-            if (player == null) return;
-            PlayerHP.Text = player.StringHP;
-            Player2HP.Text = enemy.StringHP;
+            if (player1 == null || player2 == null) return;
+            Player1HP.Text = this.player1.MessageHealth;
+            Player2HP.Text = player2.MessageHealth;
         }
+        #endregion
 
         #region Game objects creation
-        private void CreateBullet()
-        {
-            Bullet bullet = player1.MakeBullet();
-            Canvas.SetLeft(bullet._form, bullet.X);
-            Canvas.SetTop(bullet._form, bullet.Y);
-
-            MyCanvas.Children.Add(bullet._form);
-            bullets.Add(bullet);
-        }
-        // TODO : Подумай как обобщить эти методы без костылей
-        private void CreateEnemyBullet()
-        {
-            EnemyBullet bullet = new EnemyBullet(player2);
-
-            Canvas.SetRight(bullet.Form, bullet.X);
-            Canvas.SetBottom(bullet.Form, bullet.Y);
-
-            MyCanvas.Children.Add(bullet.Form);
-            eBullets.Add(bullet);
-        }
 
         private void AddPlayer(bool isClient)
         {
-            player1 = new Player();
-            player1.Reset();
-            if (isClient) return;
-            MyCanvas.Children.Add(player1._form);
-            Canvas.SetZIndex(player1._form, 1);
-            Canvas.SetTop(player1._form, player1.PlayerStartY);
-            Canvas.SetLeft(player1._form, player1.PlayerStartX);
+            player1 = new Player(true,Player1DefaultPos);
+            //if (isClient) return;
+            MyCanvas.Children.Add(player1.Form);
+            Canvas.SetZIndex(player1.Form, 1);
         }
 
         private void AddEnemy(bool isClient)
         {
-            player2 = new Enemy();
+            player2 = new Player(false,Player2DefaultPos);
             if (isClient) return;
             MyCanvas.Children.Add(player2.Form);
             Canvas.SetZIndex(player2.Form, 1);
-            Canvas.SetBottom(player2.Form, player2.PlayerStartY);
-            Canvas.SetRight(player2.Form, player2.PlayerStartX);
-            player2.Reset();
-            player2.Transform();
         }
         #endregion
 
@@ -374,7 +283,7 @@ namespace Space_battle.View
             if (e.Key == Key.W)
             {
                 moveForward = false;
-                changeSpeedPlayer = false;
+                increaseP1Speed = false;
             }
             if (e.Key == Key.A) rotateLeft = false;
             if (e.Key == Key.D)
@@ -393,7 +302,7 @@ namespace Space_battle.View
             if (e.Key == Key.W)
             {
                 moveForward = true;
-                changeSpeedPlayer = true;
+                increaseP1Speed = true;
                 //moveBack = false;
             }
 
@@ -405,13 +314,13 @@ namespace Space_battle.View
             //}
             #endregion
 
-            if (e.Key == Key.D && !isClient) player1.RotateForm(false);
+            if (e.Key == Key.D && !isClient) player1.RotateObject(false);
             else if (e.Key == Key.D && isClient) rotateRight = true;
 
-            if (e.Key == Key.A && !isClient) player1.RotateForm(true);
+            if (e.Key == Key.A && !isClient) player1.RotateObject(true);
             else if (e.Key == Key.A && isClient) rotateLeft = true;
 
-            if (e.Key == Key.Space && !isClient) CreateBullet();
+            if (e.Key == Key.Space && !isClient) MyCanvas.Children.Add(player1.MakeBullet().Form);
             else if (e.Key == Key.Space && isClient) fire = true;
         }
         #endregion

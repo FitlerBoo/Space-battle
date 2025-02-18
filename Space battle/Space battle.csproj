@@ -151,6 +151,7 @@
     </Compile>
     <Compile Include="Model\Bullet.cs" />
     <Compile Include="Model\GameObject.cs" />
+    <Compile Include="Model\ISerializer.cs" />
     <Compile Include="Model\Player.cs" />
     <Compile Include="Model\Position.cs" />
     <Compile Include="Model\UDPClient.cs" />

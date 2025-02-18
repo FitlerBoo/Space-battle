@@ -5,8 +5,12 @@ namespace Space_battle.Model
 {
     internal class Bullet : GameObject
     {
-        public Bullet(bool isFirstPlayer, double x, double y, double angle)
-            : base(isFirstPlayer ,x + 30, y + 30, angle) { }
+        bool _isFirstPlayer;
+        public Bullet(bool isFirstStylePlayer, double x, double y, double angle)
+            : base(new Position(x + 30, y + 30, angle, 40))
+        {
+            _isFirstPlayer = isFirstStylePlayer;
+        }
 
         protected override void SetForm()
         {

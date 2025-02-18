@@ -17,7 +17,7 @@
                         Stretch="UniformToFill"/>
         </Canvas.Background>
 
-        <TextBlock Name="PlayerHP" Style="{StaticResource Text_Style}" Text="PlayerHP : 100"/>
+        <TextBlock Name="Player1HP" Style="{StaticResource Text_Style}" Text="PlayerHP : 100"/>
         <TextBlock Name="Player2HP" Style="{StaticResource Text_Style}" Text="Enemy HP : 100"/>
 
     </Canvas>

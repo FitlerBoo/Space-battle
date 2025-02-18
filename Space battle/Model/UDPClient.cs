@@ -13,10 +13,8 @@ namespace Space_battle.Model
         private readonly int localPort = 10101;
         private readonly int remotePort = 10100;
 
-        private Player player;
-        private Enemy enemy;
-        private List<Bullet> bullets = new List<Bullet>();
-        private List<EnemyBullet> eBullets = new List<EnemyBullet>();
+        private Player player1;
+        private Player player2;
 
         public byte[] Command { get; set; } = { 0b0, 0b0, 0b0, 0b0 };
 
@@ -36,9 +34,9 @@ namespace Space_battle.Model
             sender = new UdpClient();
         }
 
-        public (Player, Enemy, List<Bullet>, List<EnemyBullet>) GetRenderedObjects()
+        public (Player, Player) GetRenderedObjects()
         {
-            return (player, enemy, bullets, eBullets);
+            return (player1, player2);
         }
         #region Data Exchanging
         public void Receive()
@@ -149,7 +147,7 @@ namespace Space_battle.Model
         private void DistributeEnemyProperties(bool isRocket, double x, double y, double angle, [Optional] double HP)
         {
             if (isRocket)
-                enemy = new Enemy(x,y,angle,HP);
+                player2 = new Enemy(x,y,angle,HP);
             else
                 eBullets.Add(new EnemyBullet(x, y, angle));
         }
@@ -157,7 +155,7 @@ namespace Space_battle.Model
         private void DisrtibutePlayerProperties(bool isRocket, double x, double y, double angle, [Optional] double HP)
         {
             if (isRocket)
-                player = new Player(x,y,angle,HP);
+                player1 = new Player(x,y,angle,HP);
             else
                 bullets.Add(new Bullet(x, y, angle));
         }

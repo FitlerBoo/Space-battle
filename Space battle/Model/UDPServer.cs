@@ -33,8 +33,6 @@ namespace Space_battle.Model
         UdpClient receiver;
         UdpClient sender;
         private IPEndPoint remoteEndPoint;
-        FileStream fs;
-        StreamWriter sw;
 
 
         public UDPServer(Player player1, Player player2)
@@ -106,11 +104,11 @@ namespace Space_battle.Model
         {
             List<byte> result = new List<byte>();
             result.AddRange(PrepareGameObjectData(player1, isPlayer: true, isRocket: true));
-            result.AddRange(AddHpData(player1.HP));
+            result.AddRange(AddHpData(player1.Health));
             result.AddRange(PrepareGameObjectData(player2, isPlayer: false, isRocket: true));
-            result.AddRange(AddHpData(player2.HP));
-            result.AddRange(PrepareBulletsData(bullets, isPlayer: true));
-            result.AddRange(PrepareBulletsData(eBullets, isPlayer: false));
+            result.AddRange(AddHpData(player2.Health));
+            result.AddRange(PrepareBulletsData(player1.Bullets, isPlayer: true));
+            result.AddRange(PrepareBulletsData(player2.Bullets, isPlayer: false));
 
             return result.ToArray();
         }
