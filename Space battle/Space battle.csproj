@@ -151,8 +151,10 @@
     </Compile>
     <Compile Include="Model\Bullet.cs" />
     <Compile Include="Model\GameObject.cs" />
-    <Compile Include="Model\Player.cs" />
+    <Compile Include="Model\Spaceship.cs" />
     <Compile Include="Model\Position.cs" />
+    <Compile Include="Model\ReaderExtensions.cs" />
+    <Compile Include="Model\WriterExtensions.cs" />
     <Compile Include="Model\UDPClient.cs" />
     <Compile Include="Model\UDPServer.cs" />
     <Compile Include="Offline\Data\ApplicationContext.cs" />
@@ -170,9 +172,6 @@
     </Compile>
     <Compile Include="View\MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="View\OfflineGame.xaml.cs">
-      <DependentUpon>OfflineGame.xaml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -199,10 +198,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\MainPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="View\OfflineGame.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

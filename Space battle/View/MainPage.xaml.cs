@@ -31,21 +31,23 @@ namespace Space_battle.View
 
         private void CreateTheGame(object sender, RoutedEventArgs e)
         {
-            game = new Game(false);
+            game = new Game(false, false);
             NavigationService.Navigate(game);
             game.StartGame();
         }
 
         private void JoinTheGame(object sender, RoutedEventArgs e)
         {
-            game = new Game(true);
+            game = new Game(true, false);
             NavigationService.Navigate(game);
             game.StartGame();
         }
 
         private void StartOfflineGame(object sender, RoutedEventArgs e)
         {
-            NavigationService.Navigate(new OfflineGame());
+            game = new Game(false, true);
+            NavigationService.Navigate(game);
+            game.StartGame();
         }
     }
 }

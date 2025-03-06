@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -23,8 +24,8 @@ namespace Space_battle.Model
         private readonly byte rocketIndicator = 0b1;
         private readonly byte bulletIndicator = 0b0;
         #endregion
-        private Player player1;
-        private Player player2;
+        private Spaceship player1;
+        private Spaceship player2;
         /// <summary>
         /// bytes : 0 - moveForward; 1 - fire; 2 - rotateLeft; 3 - rotateRight
         /// </summary>
@@ -35,7 +36,7 @@ namespace Space_battle.Model
         private IPEndPoint remoteEndPoint;
 
 
-        public UDPServer(Player player1, Player player2)
+        public UDPServer(Spaceship player1, Spaceship player2)
         {
             this.player1 = player1;
             this.player2 = player2;
@@ -49,30 +50,35 @@ namespace Space_battle.Model
         }
 
         #region Data Exchanging
-        private void Send()
+        protected void Send()
         {
             Task.Run(async () =>
             {
-                try
-                {
-                    sender.Connect(IPAddress.Broadcast, remotePort);
-                }
-                catch (Exception e)
-                {
-                    File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "err.txt"), e.Message);
-                    if (e.InnerException != null)
-                        File.WriteAllText("err.txt", e.InnerException.Message);
-                }
-                while (true)
-                {
-                    var dgram = PrepareData();
-                    var i = await sender.SendAsync(dgram, dgram.Length);
-                    await Task.Delay(15);
-                }
+                using (MemoryStream memoryStream = new MemoryStream())
+                    using (BinaryWriter writer = new BinaryWriter(memoryStream, Encoding.UTF8, true))
+                    {
+                        try
+                        {
+                            sender.Connect(IPAddress.Broadcast, remotePort);
+                        }
+                        catch (Exception e)
+                        {
+                            File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "err.txt"), e.Message);
+                            if (e.InnerException != null)
+                                File.WriteAllText("err.txt", e.InnerException.Message);
+                        }
+                        while (true)
+                        {
+                            byte[] dgram = PrepareData(writer);
+                            var i = await sender.SendAsync(dgram, dgram.Length);
+                            memoryStream.SetLength(0);
+                            await Task.Delay(15);
+                        }
+                    }
             });
         }
 
-        private void Receive()
+        protected void Receive()
         {
             try
             {
@@ -100,12 +106,11 @@ namespace Space_battle.Model
         /// <summary>
         /// TODO: Вынести всё связанное с сереализацие/десериализацией в отдельный класс
         /// Здесть должна остаться только логика приёма/перадачи данных, поддержка соединения
-        private byte[] PrepareData()
+        private byte[] PrepareData(BinaryWriter writer)
         {
-            List<byte> result = new List<byte>();
-            result.AddRange(player1.Serialize());
-            result.AddRange(player2.Serialize());
-            return result.ToArray();
+            player1.Serialize(writer);
+            player2.Serialize(writer);
+            return ((MemoryStream)writer.BaseStream).ToArray();
         }
         #endregion
         #region Data Processing
@@ -119,8 +124,6 @@ namespace Space_battle.Model
             for (int i = 0; i < data.Length; i++)
                 Command[i] = data[i] > 0;
         }
-
-
         #endregion
     }
 }

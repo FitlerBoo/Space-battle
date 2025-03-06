@@ -5,15 +5,31 @@ using System.Windows.Controls;
 using System.Collections.Generic;
 using System;
 using System.Net.Sockets;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Space_battle.Model
 {
+    enum GameObjectType
+    {
+        Spaceship = 0,
+        Bullet = 1
+    }
+
+    internal enum GameObjectStyle
+    {
+        Red = 1,
+        Yellow = 2
+    }
+
     abstract class GameObject
     {
         protected Position _position;
         protected Rectangle _form;
-        protected bool _isFirstPlayerStyle;
+        protected GameObjectType _type;
+        protected GameObjectStyle _style;
 
+        public GameObjectStyle Style => _style;
         public double X => _position.X;
         public double Y => _position.Y;
         public double Speed => _position.Speed;
@@ -21,13 +37,16 @@ namespace Space_battle.Model
         public Rect HitBox => new Rect(_position.X, _position.Y, _form.Width, _form.Height);
         public Rectangle Form => _form;
 
-        public GameObject(Position pos, bool style)
+        public GameObject(Position pos, GameObjectType type, GameObjectStyle style)
         {
-            _isFirstPlayerStyle = style;
+            _type = type;
+            _style = style;
             SetForm();
             MoveToPosition(pos);
             Transform();
         }
+
+        public GameObject() { }
 
         private void Transform()
         {
@@ -51,6 +70,7 @@ namespace Space_battle.Model
         public void MoveToPosition(Position pos)
         {
             _position = pos;
+            Transform();
             MakeVisualMovement();
         }
 
@@ -60,23 +80,7 @@ namespace Space_battle.Model
             Canvas.SetTop(_form, _position.Y);
         }
         protected abstract void SetForm();
-        public abstract byte[] Serialize();
-        public abstract void Deserialize(byte[] data, ref int currentIndex);
-
-        protected void SerializeAndAddProperty(double value, ref List<byte> data)
-        {
-            var valueByte = BitConverter.GetBytes(value);
-            data.Add((byte)valueByte.Length);
-            data.AddRange(valueByte);
-        }
-        protected double DeserializeProperty(byte[] data, ref int currentIndex)
-        {
-            var length = data[currentIndex++];
-            byte[] byteData = new byte[length];
-            for (int i = 0; i < length; i++)
-                byteData[i] = data[currentIndex++];
-            var deserValue = BitConverter.ToDouble(byteData, 0);
-            return deserValue;
-        }
+        public abstract void Serialize(BinaryWriter bw);
+        public abstract void Deserialize(BinaryReader br);
     }
 }

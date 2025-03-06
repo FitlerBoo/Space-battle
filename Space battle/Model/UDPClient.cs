@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -14,15 +17,14 @@ namespace Space_battle.Model
         private readonly int localPort = 10101;
         private readonly int remotePort = 10100;
 
-        private Player player1;
-        private Player player2;
+        private Spaceship player1;
+        private Spaceship player2;
 
         public byte[] Command { get; set; } = { 0b0, 0b0, 0b0, 0b0 };
 
         private UdpClient receiver;
         private UdpClient sender;
         private IPEndPoint remoteEndPoint;
-        private int playersCounter = 0;
 
 
         private readonly Dispatcher _UIDispatcher;
@@ -35,7 +37,7 @@ namespace Space_battle.Model
             sender = new UdpClient();
         }
 
-        public (Player, Player) GetRenderedObjects()
+        public (Spaceship, Spaceship) GetRenderedObjects()
         {
             return (player1, player2);
         }
@@ -46,15 +48,22 @@ namespace Space_battle.Model
             {
                 Task.Run(async () =>
                 {
-                    while (true)
-                    {
-                        var receivedData = receiver.Receive(ref remoteEndPoint);
-
-                        await _UIDispatcher.InvokeAsync(new Action(()=>
+                    using (var memoryStream = new MemoryStream())
+                        using (var reader = new BinaryReader(memoryStream, Encoding.UTF8, true))
                         {
-                            ProcessData(receivedData);
-                        }), DispatcherPriority.Render);
-                    }
+                            while (true)
+                            {
+                                var receivedData = receiver.Receive(ref remoteEndPoint);
+                                memoryStream.Write(receivedData, 0, receivedData.Length);
+                                memoryStream.Position = 0;
+
+                                await _UIDispatcher.InvokeAsync(new Action(() =>
+                                {
+                                    ProcessData(reader);
+                                    memoryStream.SetLength(0);
+                                }), DispatcherPriority.Render);
+                            }
+                        }
                 });
             }
             catch (Exception) { }
@@ -67,7 +76,7 @@ namespace Space_battle.Model
                 Task.Run(async () =>
                 {
                     //(IPAddress.Parse("192.168.43.139")
-                    sender.Connect(IPAddress.Broadcast, remotePort);
+                    sender.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), remotePort));
                     while (true)
                     {
                         var i = await sender.SendAsync(Command, Command.Length);
@@ -92,24 +101,19 @@ namespace Space_battle.Model
         /// Здесь должна остаться только логика приёма/передачи данных, поддержка соединения
         /// </summary>
         /// <param name="data"></param>
-        private void ProcessData(byte[] data)
+        private void ProcessData(BinaryReader br)
         {
-            int currentIndex = 0;
-            DeserializePlayer(player1, data, ref currentIndex);
-            DeserializePlayer(player2, data, ref currentIndex);
+            player1 = ProcessPlayer(br);
+            player2 = ProcessPlayer(br);
         }
 
-        private void DeserializePlayer(Player player, byte[] data, ref int currentIndex)
+        private Spaceship ProcessPlayer(BinaryReader br)
         {
-            var indicator = data[currentIndex];
-            player.Bullets.Clear();
-            player.Deserialize(data, ref currentIndex);
-            while (data[currentIndex] == indicator)
-            {
-                var bullet = new Bullet(player.Style, 0, 0, 0);
-                bullet.Deserialize(data, ref currentIndex);
-                player1.Bullets.Enqueue(bullet);
-            }
+            var player = new Spaceship(br);
+            var bulletsCount = br.ReadBulletsCount();
+            for (int i = 0; i < bulletsCount; i++)
+                player.AddBullet(new Bullet(br));
+            return player;
         }
         #endregion
     }

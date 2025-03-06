@@ -21,6 +21,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.ComponentModel.Design;
+using System.IO;
 
 namespace Space_battle.View
 {
@@ -32,16 +33,17 @@ namespace Space_battle.View
         #region Application Properties
         private readonly double applicationHeight = Application.Current.MainWindow.Height;
         private readonly double applicationWidth = Application.Current.MainWindow.Width;
-        private bool isClient;
-        private bool increaseP1Speed;
-        private bool increaseP2Speed;
-        Position Player1DefaultPos = new Position(370, 500, -9);
-        Position Player2DefaultPos = new Position(370, 40, 9);
+        private bool _isClient;
+        private bool _offline;
+        private bool _increaseP1Speed;
+        private bool _increaseP2Speed;
+        Position Player1DefaultPos => new Position(370, 500, -9);
+        Position Player2DefaultPos => new Position(370, 40, 9);
         #endregion
 
         #region Render Objects
-        private Player player1;
-        private Player player2;
+        private Spaceship player1;
+        private Spaceship player2;
         private DispatcherTimer gameTimer = new DispatcherTimer();
         private Queue<UIElement> itemRemover = new Queue<UIElement>();
         private Task gameTask;
@@ -52,13 +54,13 @@ namespace Space_battle.View
         private const byte FALSE_COMMAND = 0b0;
         private bool rotateRight;
         private bool rotateLeft;
-        private bool moveForwardP1;
+        private bool moveForward;
         private bool moveForwardP2;
         private bool fire;
         #endregion
 
         #region Net
-        private UDPServer udpServer;
+        private UDPServer server;
         private UDPClient udpClient;
         #endregion
 
@@ -66,13 +68,14 @@ namespace Space_battle.View
         /// Является ли пользователь клиентом?
         /// </summary>
         /// <param name="isClient"></param>
-        public Game(bool isClient)
+        public Game(bool isClient, bool offline)
         {
-            this.isClient = isClient;
-            this.DataContext = this;
+            _isClient = isClient;
+            _offline = offline;
+            DataContext = this;
             InitializeComponent();
 
-            RenderStartScene(isClient);
+            RenderStartScene();
 
             if (isClient)
             {
@@ -81,8 +84,8 @@ namespace Space_battle.View
             }
             else
             {
-                udpServer = new UDPServer(player1, player2);
-                udpServer.StartDataExchange();
+                server = new UDPServer(player1, player2);
+                if(!_offline) server.StartDataExchange();
             }
 
             gameTask = new Task(RenderTask); 
@@ -90,9 +93,10 @@ namespace Space_battle.View
             gameTimer.Interval = TimeSpan.FromMilliseconds(15);
 
             MyCanvas.Focus();
+
         }
 
-        private void RenderStartScene(bool isClient)
+        private void RenderStartScene()
         {
             Canvas.SetRight(Player2HP, 0);
             AddPlayers();
@@ -103,24 +107,31 @@ namespace Space_battle.View
             gameTask.Start();
         }
 
-        private void RenderTask()
+        private async void RenderTask()
         {
             var renderTimer = Stopwatch.StartNew();
             while (player1.Health > 0 && player2.Health > 0)
             {
 
                 if (renderTimer.ElapsedMilliseconds < 15)
+                {
+                    //await Task.Delay(30);
+                    //
                     continue;
+                }
+
+                
+
 
                 renderTimer.Restart();
 
                 try
                 {
-                    if (isClient)
-                        this.Dispatcher.Invoke(new Action(() => GameLoopClient()));
+                    if (_isClient)
+                        await this.Dispatcher.InvokeAsync(new Action(() => GameLoopClient()));
                         
                     else
-                        this.Dispatcher.Invoke(new Action(() => GameLoopServer()));
+                        await this.Dispatcher.InvokeAsync(new Action(() => GameLoopServer()));
                 }
                 catch (TaskCanceledException)
                 {
@@ -129,12 +140,14 @@ namespace Space_battle.View
             }
             var winner = player1.Health > player2.Health ? "Player 1" : "Player 2";
             MessageBox.Show(winner + " wins!");
+            //MessageBox.Show()
             this.Dispatcher.BeginInvokeShutdown(DispatcherPriority.Normal);
         }
 
         #region Server part
         private void GameLoopServer()
         {
+            KeysUpdate();
             MovePlayer();
             MoveEnemy();
 
@@ -146,13 +159,12 @@ namespace Space_battle.View
             var enemyImmune = CheckBulletsIntersectionsPlayer(player2, player1.Bullets);
         }
 
-        private bool CheckBulletsIntersectionsPlayer(Player playerObj, Queue<Bullet> bullets)
+        private bool CheckBulletsIntersectionsPlayer(Spaceship playerObj, Queue<Bullet> bullets)
         {
             foreach (var bullet in bullets.ToArray())
                 if (playerObj.HitBox.IntersectsWith(bullet.HitBox))
                 {
-                    var b = bullets.Dequeue();
-                    MyCanvas.Children.Remove(b.Form);
+                    MyCanvas.Children.Remove(bullets.Dequeue().Form);
                     playerObj.TakeDamage();
                     UpdateScore(player1, player2);
                     return true;
@@ -164,42 +176,40 @@ namespace Space_battle.View
         {
             if (CheckBorderCondition(player2))
             {
-                if (udpServer.Command[(int)Commands.MoveForward])
+                if (server.Command[(int)Commands.MoveForward])
                 {
                     moveForwardP2 = true;
-                    increaseP2Speed = true;
+                    _increaseP2Speed = true;
                 }
                 else
                 {
                     moveForwardP2 = false;
-                    increaseP2Speed = false;
+                    _increaseP2Speed = false;
                 }
 
                 if (moveForwardP2 || player2.Speed > 0)
                 {
-                    player2.CalculateSpeed(increaseP2Speed);
+                    player2.CalculateSpeed(_increaseP2Speed);
                     player2.Move();
                 }
             }
             else player2.MoveToPosition(Player2DefaultPos);
-            if (udpServer.Command[(int)Commands.Fire]) MyCanvas.Children.Add(player2.MakeBullet().Form);
-            if (udpServer.Command[(int)Commands.RotateLeft]) player2.RotateObject(true);
-            if (udpServer.Command[(int)Commands.RotateRight]) player2.RotateObject(false);
+            if (server.Command[(int)Commands.Fire]) MyCanvas.Children.Add(player2.MakeBullet().Form);
+            if (server.Command[(int)Commands.RotateLeft]) player2.RotateObject(true);
+            if (server.Command[(int)Commands.RotateRight]) player2.RotateObject(false);
         }
         private void MovePlayer()
         {
             if (CheckBorderCondition(player1))
             {
-                if (moveForwardP1 || player1.Speed > 0)
+                if (moveForward || player1.Speed > 0)
                 {
-                    player1.CalculateSpeed(increaseP1Speed);
+                    player1.CalculateSpeed(_increaseP1Speed);
                     player1.Move();
                 }
             }
             else
-            {
-                player1.MoveToPosition(Player1DefaultPos);
-            }
+                player1.MoveToPosition(Player1DefaultPos); 
         }
 
         private void MoveBullets(Queue<Bullet> bullets)
@@ -220,6 +230,7 @@ namespace Space_battle.View
         #region  Client part
         private void GameLoopClient()
         {
+            KeysUpdate();
             udpClient.Command = MakeCommand();
             var objects = udpClient.GetRenderedObjects();
             RenderScene(player1 : objects.Item1, player2 : objects.Item2);
@@ -227,15 +238,20 @@ namespace Space_battle.View
 
         private byte[] MakeCommand()
         {
-            var commands = new bool[] { moveForwardP1, fire, rotateLeft, rotateRight };
+            var commands = new bool[] { moveForward, fire, rotateLeft, rotateRight };
             var resultCommand = new byte[4];
             for (int i = 0; i < commands.Length; i++)
                 resultCommand[i] = commands[i] ? TRUE_COMMAND : FALSE_COMMAND;
             return resultCommand;
         }
          
-        private void RenderScene(Player player1, Player player2)
+        private void RenderScene(Spaceship player1, Spaceship player2)
         {
+            if (this.player1 != null && player2 != null)
+            {
+                itemRemover.Enqueue(this.player1.Form);
+                itemRemover.Enqueue(this.player2.Form);
+            }
             if (player1 == null || player2 == null) return;
             ClearObsoleteObjects();
 
@@ -255,7 +271,7 @@ namespace Space_battle.View
                 (obj.X + 30) < applicationWidth && obj.X > -40;
         }
 
-        private void UpdateScore(Player player1, Player player2)
+        private void UpdateScore(Spaceship player1, Spaceship player2)
         {
             if (player1 == null || player2 == null) return;
             Player1HP.Text = this.player1.MessageHealth;
@@ -275,8 +291,8 @@ namespace Space_battle.View
 
         private void AddPlayers()
         {
-            player1 = new Player(true,Player1DefaultPos);
-            player2 = new Player(false, Player2DefaultPos);
+            player1 = new Spaceship(GameObjectStyle.Red, GameObjectType.Spaceship, Player1DefaultPos);
+            player2 = new Spaceship(GameObjectStyle.Yellow, GameObjectType.Spaceship, Player2DefaultPos);
             MyCanvas.Children.Add(player1.Form);
             MyCanvas.Children.Add(player2.Form);
             Canvas.SetZIndex(player1.Form, 1);
@@ -298,50 +314,39 @@ namespace Space_battle.View
         #endregion
 
         #region Keys
-        // TODO : Переписать методы со скоростью
-        private void OnKeyUp(object sender, KeyEventArgs e)
+        private void KeysUpdate()
         {
-            if (e.Key == Key.W)
+            if (Keyboard.IsKeyDown(Key.W))
             {
-                moveForwardP1 = false;
-                increaseP1Speed = false;
+                moveForward = true;
+                _increaseP1Speed = true;
             }
-            if (e.Key == Key.A) rotateLeft = false;
-            if (e.Key == Key.D) rotateRight = false;
-            if (e.Key == Key.Space) fire = false;
-            #region moveBack
-            //if (e.Key == Key.D)
-            //{
-            //    moveBack = false;
-            //}
-            #endregion
-        }
-
-        private void OnKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.W)
+            else
             {
-                moveForwardP1 = true;
-                increaseP1Speed = true;
-                //moveBack = false;
+                moveForward = false;
+                _increaseP1Speed = false;
             }
 
-            #region moveBack
-            //if (e.Key == Key.S)
-            //{
-            //    //moveBack = true;
-            //    //moveForward = false;
-            //}
+            if (Keyboard.IsKeyDown(Key.D)) player1.RotateObject(false);
+            if (Keyboard.IsKeyDown(Key.A)) player1.RotateObject(true);
+            if (Keyboard.IsKeyDown(Key.Space)) MyCanvas.Children.Add(player1.MakeBullet().Form);
+
+            #region Second player
+            if (_offline)
+            {
+                if (Keyboard.IsKeyDown(Key.Up)) server.Command[(int)Commands.MoveForward] = true;
+                else server.Command[(int)Commands.MoveForward] = false;
+
+                if (Keyboard.IsKeyDown(Key.Left)) server.Command[(int)Commands.RotateLeft] = true;
+                else server.Command[(int)Commands.RotateLeft] = false;
+
+                if (Keyboard.IsKeyDown(Key.Right)) server.Command[(int)Commands.RotateRight] = true;
+                else server.Command[(int)Commands.RotateRight] = false;
+
+                if (Keyboard.IsKeyDown(Key.RightCtrl)) server.Command[(int)Commands.Fire] = true;
+                else server.Command[(int)Commands.Fire] = false;
+            }
             #endregion
-
-            if (e.Key == Key.D && !isClient) player1.RotateObject(false);
-            else if (e.Key == Key.D && isClient) rotateRight = true;
-
-            if (e.Key == Key.A && !isClient) player1.RotateObject(true);
-            else if (e.Key == Key.A && isClient) rotateLeft = true;
-
-            if (e.Key == Key.Space && !isClient) MyCanvas.Children.Add(player1.MakeBullet().Form);
-            else if (e.Key == Key.Space && isClient) fire = true;
         }
         #endregion
         public enum Commands
